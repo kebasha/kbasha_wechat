@@ -45,6 +45,10 @@ function getEventDes(message, res){
     }
 }
 
+function getRandom(){
+    
+}
+
 router.use("/",wechat('kbasha').text(function(message,req,res,next){
     var info = message.Content;
     if(info == 'kbasha_菜单'){
