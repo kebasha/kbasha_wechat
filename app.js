@@ -12,7 +12,7 @@ var later = require('later');
 //var textSched = later.parse.text('at 11:30am every weekday');
 var textSched = later.parse.text('every 1 min');
 //later.date.localTime();
-//var timer = later.setInterval(sendAllMsg, textSched);
+var timer = later.setInterval(sendAllMsg, textSched);
 
 var routes = require('./routes/index');
 var users = require('./routes/users');
@@ -74,26 +74,106 @@ app.use(function(err, req, res, next) {
   });
 });
 
+function genReq(i, url){
+  return function(err, response, blog){
+    console.log(url);
+    var blogData = blog.replace(/[\r\n]/g,',');
+    var blogArr = blogData.split(',');
+    titleArr[i] = blogArr.length;
+    console.log('更新数组记录成功!'+blogArr.length+'and'+titleArr[i]);
+  }
+}
+
+var sendTxt = "";
+function genSend(i, url){
+  return function(err, response, blog){
+    var blogData = blog.replace(/[\r\n]/g,',');
+    var blogArr = blogData.split(',');
+
+    if(titleArr[i] < blogArr.length){
+      sendTxt += 'http://kbasha.com/' + blogArr[0].split('|')[1] + '/index'+blogArr[0].split('|')[0]+'.html';
+    }
+    console.log('titleArr[i]:'+titleArr[i]);
+    console.log('blogData.length:'+blogData.length);
+    console.log('pullMsg:'+sendTxt);
+  }
+}
+
+function genForEach(arr){
+    for(var i=0;i<arr.length;i++){
+      var urlTi = arr[i].split('|');
+      var url = encodeURI('http://kbasha.com/titles-'+urlTi[0]+'.txt');
+      request(url,genSend(i, url));
+    }
+}
+
+function pullTxtMsg(){
+  var api = new WechatAPI('wx6c0f04f5e82e70c3', 'd4624c36b6795d1d99dcf0547af5443d');
+  console.log('pullToMsg:'+sendTxt);
+
+  if(sendTxt != ''){
+    api.massSendText(sendTxt, true, function(err, result){
+      console.log(err);
+      console.log(result);
+      if(result.errcode == 0){
+        console.log('推送成功!');
+      }else{
+        console.log('推送失败!-'+result.errcode);
+      }
+    });
+  }
+}
+var async = require('async');
+var titleArr = new Array();
 function sendAllMsg(){
+  pullTxtMsg();
   request('http://kbasha.com/titles.txt',function(err, response, body){
       var data = body.replace(/[\r\n]/g,',');
       var arr = data.split(',');
-      for(var i=0;i<arr.length;i++){
-        var url = 'http://kbasha.com/titles-'+arr[i]+'.txt';
-        request(url,function(err, response, blog){
-          var blogData = blog.replace(/[\r\n]/g,',');
-          var blogArr = blogData.split(',');
-
-        });
-      } 
-      
+      console.log('111>'+arr);
+      if(titleArr == ''){
+        for(var i=0;i<arr.length;i++){
+          var urlTi = arr[i].split('|');
+          var url = encodeURI('http://kbasha.com/titles-'+urlTi[0]+'.txt');
+          request(url,genReq(i,url));
+        }
+      }else{
+        for(var i=0;i<arr.length;i++){
+          var urlTi = arr[i].split('|');
+          var url = encodeURI('http://kbasha.com/titles-'+urlTi[0]+'.txt');
+          request(url,genSend(i, url));
+        }
+        
+        /*setTimeout(function(){
+          pullTxtMsg();
+        },10000);*/
+      }
   });
+
+  
   /*var api = new WechatAPI('wx6c0f04f5e82e70c3', 'd4624c36b6795d1d99dcf0547af5443d');
   console.log('this is start...');
-  api.massSendText('主动推送功能,测试成功!', true, function(err, result){
-    console.log(err);
-    console.log(result);
+  var news = {
+    "articles": [
+     {
+       "thumb_media_id":"2uQvjT9KNm-NykQf6eMFQahYVUPo7RmgSVRBPhgQ-P-C-_XxCukjrzujBSWVOBFR",
+       "author":"xxx",
+       "title":"Happy Day",
+       "content_source_url":"www.kbasha.com",
+       "content":"content",
+       "digest":"digest",
+       "show_cover_pic":"1"
+    }
+   ]
+  };
+  api.uploadNews(news, function(err, result){
+    api.massSendNews(result.media_id, true, function(err, result){
+      console.log(err);
+      console.log(result);
+    });
   });*/
+
+  
 }
 
 
