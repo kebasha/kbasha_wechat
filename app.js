@@ -12,7 +12,7 @@ var later = require('later');
 //var textSched = later.parse.text('at 11:30am every weekday');
 var textSched = later.parse.text('every 1 min');
 //later.date.localTime();
-var timer = later.setInterval(sendAllMsg, textSched);
+//var timer = later.setInterval(sendAllMsg, textSched);
 
 var routes = require('./routes/index');
 var users = require('./routes/users');
@@ -91,10 +91,22 @@ function genSend(i, url){
     var blogArr = blogData.split(',');
 
     if(titleArr[i] < blogArr.length){
-      sendTxt += 'http://kbasha.com/' + blogArr[0].split('|')[1] + '/index'+blogArr[0].split('|')[0]+'.html';
+      var url = encodeURI('http://kbasha.com/' + blogArr[0].split('|')[1] + '/index'+blogArr[0].split('|')[0]+'.html');
+      var title = blogArr[0].split('|')[1];
+      //sendTxt += 'http://kbasha.com/' + blogArr[0].split('|')[1] + '/index'+blogArr[0].split('|')[0]+'.html';
+      var api = new WechatAPI('wx6b6bb6ad02270694', '29519328b7a59509f15e4108915621f5');
+      api.uploadMaterial('./public/images/kbasha_id.jpg', 'thumb', function(err, result){
+          console.log('uploadMaterial'+err);
+          console.log('uploadMaterial'+result);
+          if(sendTxt == ''){
+              sendTxt += '{"thumb_media_id":"'+result.media_id+'","author":"kbasha","title":"'+title+'","content_source_url":"'+url+'","content":"content","digest":"digest","show_cover_pic":"1"}';
+          }else{
+              sendTxt += ',{"thumb_media_id":"'+result.media_id+'","author":"kbasha","title":"'+title+'","content_source_url":"'+url+'","content":"content","digest":"digest","show_cover_pic":"1"}';
+          }
+      });
     }
     console.log('titleArr[i]:'+titleArr[i]);
-    console.log('blogData.length:'+blogData.length);
+    console.log('blogData.length:'+blogArr.length);
     console.log('pullMsg:'+sendTxt);
   }
 }
@@ -108,21 +120,41 @@ function genForEach(arr){
 }
 
 function pullTxtMsg(){
-  var api = new WechatAPI('wx6c0f04f5e82e70c3', 'd4624c36b6795d1d99dcf0547af5443d');
-  console.log('pullToMsg:'+sendTxt);
+    console.log('pullToMsg:'+sendTxt);
+    var api = new WechatAPI('wx6b6bb6ad02270694', '29519328b7a59509f15e4108915621f5');
+    /*api.uploadMaterial('/imamges/kbasha_id.jpg', 'thumb', function(err, result){
+        var news = JSON.parse('{"articles": ['+sendTxt+']}');
+        api.uploadNews(news, function(err, result){
+          api.massSendNews(result.media_id, true, function(err, result){
+            console.log(err);
+            console.log(result);
+          });
+        });
+    });*/
 
   if(sendTxt != ''){
-    api.massSendText(sendTxt, true, function(err, result){
-      console.log(err);
-      console.log(result);
-      if(result.errcode == 0){
-        console.log('推送成功!');
-      }else{
-        console.log('推送失败!-'+result.errcode);
-      }
-    });
+      var news = JSON.parse('{"articles": ['+sendTxt+']}');
+      api.uploadNews(news, function(err, result){
+          api.massSendNews(result.media_id, true, function(err, result){
+              if(result.errcode == 0){
+                console.log('推送成功!');
+              }else{
+                console.log('推送失败!-'+result.errcode);
+              }
+          });
+      });
+      /*api.massSendText(sendTxt, true, function(err, result){
+        console.log(err);
+        console.log(result);
+        if(result.errcode == 0){
+          console.log('推送成功!');
+        }else{
+          console.log('推送失败!-'+result.errcode);
+        }
+      });*/
   }
 }
+
 var async = require('async');
 var titleArr = new Array();
 function sendAllMsg(){
@@ -149,31 +181,6 @@ function sendAllMsg(){
         },10000);*/
       }
   });
-
-  
-  /*var api = new WechatAPI('wx6c0f04f5e82e70c3', 'd4624c36b6795d1d99dcf0547af5443d');
-  console.log('this is start...');
-  var news = {
-    "articles": [
-     {
-       "thumb_media_id":"2uQvjT9KNm-NykQf6eMFQahYVUPo7RmgSVRBPhgQ-P-C-_XxCukjrzujBSWVOBFR",
-       "author":"xxx",
-       "title":"Happy Day",
-       "content_source_url":"www.kbasha.com",
-       "content":"content",
-       "digest":"digest",
-       "show_cover_pic":"1"
-    }
-   ]
-  };
-  api.uploadNews(news, function(err, result){
-    api.massSendNews(result.media_id, true, function(err, result){
-      console.log(err);
-      console.log(result);
-    });
-  });*/
-
-  
 }
 
 
